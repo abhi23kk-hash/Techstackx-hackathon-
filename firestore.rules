@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // User profile documents
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 256;
+      allow update: if isOwner(userId)
+        && resource.data.uid == userId
+        && request.resource.data.uid == userId;
+      allow delete: if false;
+
+      // Workflows subcollection
+      match /workflows/{workflowId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(workflowId)
+          && request.resource.data.ownerId == userId
+          && request.resource.data.title is string
+          && request.resource.data.title.size() <= 256;
+        allow update: if isOwner(userId)
+          && isValidId(workflowId)
+          && resource.data.ownerId == userId
+          && request.resource.data.ownerId == userId;
+        allow delete: if isOwner(userId) && isValidId(workflowId);
+      }
+
+      // User events stream subcollection
+      match /events/{eventId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(eventId)
+          && request.resource.data.userId == userId;
+        allow delete: if isOwner(userId) && isValidId(eventId);
+      }
+
+      // User chat messages subcollection
+      match /messages/{messageId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId)
+          && isValidId(messageId)
+          && request.resource.data.userId == userId
+          && request.resource.data.content is string
+          && request.resource.data.content.size() <= 10000;
+        allow delete: if isOwner(userId) && isValidId(messageId);
+      }
+    }
+
+    // Healthcheck / test connection document
+    match /test/connection {
+      allow get: if true;
+    }
+  }
+}

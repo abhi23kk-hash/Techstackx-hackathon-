@@ -1,0 +1,6 @@
+{
+  "name": "WorkFlowOS - AI-Powered OS-Level Workflow Automation",
+  "description": "An AI-powered desktop agent that observes user activity across applications, detects repetitive patterns, synthesizes intent, and auto-generates resilient multi-tier OS and API automations with gamified productivity tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
